@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1777384843962,
+      "tag": "0000_flawless_ken_ellis",
+      "breakpoints": true
+    }
+  ]
+}
