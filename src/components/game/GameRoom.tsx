@@ -7,6 +7,7 @@ import { GameBoard } from "./GameBoard";
 import { PlayerList } from "./PlayerList";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useToast } from "@/components/ui/Toast";
 
 interface GameRoomProps {
   roomId: string;
@@ -17,6 +18,7 @@ interface GameRoomProps {
 type GamePhase = "lobby" | "demo" | "input" | "finished";
 
 export function GameRoom({ roomId, userId, userName }: GameRoomProps) {
+  const { showToast } = useToast();
   const [gamePhase, setGamePhase] = useState<GamePhase>("lobby");
   const [sequence, setSequence] = useState<number[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
@@ -124,8 +126,8 @@ export function GameRoom({ roomId, userId, userName }: GameRoomProps) {
   // Копирование ссылки
   const copyLink = useCallback(() => {
     navigator.clipboard.writeText(window.location.href);
-    alert("Ссылка скопирована!");
-  }, []);
+    showToast("Ссылка скопирована!", "success");
+  }, [showToast]);
 
   // Лобби
   if (gamePhase === "lobby" && !winner) {

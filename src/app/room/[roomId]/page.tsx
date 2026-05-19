@@ -4,10 +4,12 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GameRoom } from "@/components/game/GameRoom";
 import { trpc } from "@/lib/trpc/client";
+import { useToast } from "@/components/ui/Toast";
 
 export default function RoomPage() {
   const params = useParams();
   const roomId = params.roomId as string;
+  const { showToast } = useToast();
   
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export default function RoomPage() {
         return;
       }
       console.error("Ошибка подключения:", error);
-      alert(error.message);
+      showToast(error.message, "error");
       window.location.href = "/";
     },
   });

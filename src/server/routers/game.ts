@@ -276,7 +276,47 @@ export const gameRouter = router({
       return { correct: true, sequence: newSequence, round: newRound };
     }),
 
-  // Мутация: проверить ответ игрока
+  // Запрос: получить историю игр пользователя
+  getGameHistory: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { user, db } = ctx;
+
+      const history = await db.query.gameHistory.findMany();
+
+      // Получаем детали комнат и сортируем по дате
+      const result = await Promise.all(
+        history.map(async (record) => {
+          const room = record.roomId
+            ? await db.query.rooms.findFirst({
+                where: eq(rooms.id, record.roomId),
+              })
+            : null;
+
+          const isWinner = record.winnerId === user.id;
+          const isBotGame = room?.maxPlayers === 1;
+
+          return {
+            id: record.id,
+            roomId: record.roomId,
+            totalRounds: record.totalRounds,
+            finishedAt: record.finishedAt,
+            isWinner,
+            isBotGame,
+            winnerId: record.winnerId,
+            mode: isBotGame ? "bot" : "multiplayer",
+          };
+        })
+      );
+
+      // Сортируем по дате завершения (новые сначала)
+      result.sort((a, b) => {
+        if (!a.finishedAt) return 1;
+        if (!b.finishedAt) return -1;
+        return new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime();
+      });
+
+      return result;
+    }),
   submitAnswer: protectedProcedure
     .input(
       z.object({
