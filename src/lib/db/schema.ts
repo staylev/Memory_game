@@ -50,6 +50,9 @@ export const rooms = sqliteTable("rooms", {
   status: text("status", { enum: ["waiting", "playing", "finished"] }).default("waiting"),
   currentSequence: text("current_sequence"),
   currentRound: integer("current_round").default(1),
+  currentPlayerId: text("current_player_id"),
+  roundComplete: integer("round_complete", { mode: "boolean" }).default(false),
+  winnerId: text("winner_id"),
   maxPlayers: integer("max_players").default(6),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
 });

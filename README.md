@@ -1,36 +1,171 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Memory Game
 
-## Getting Started
+Многопользовательская игра на запоминание последовательностей на Next.js + tRPC.
 
-First, run the development server:
+## Особенности
+
+- **Многопользовательский режим** — 2-6 игроков могут играть вместе
+- **Синхронизация через polling** — данные обновляются каждую секунду через tRPC
+- **Пошаговая система ходов** — игроки вводят последовательность по очереди
+- **Автоматическое завершение раундов** — сервер управляет очередностью и завершением раундов
+- **Игра с ботом** — одиночный режим с AI
+
+## Запуск
+
+### Разработка (рекомендуется)
+
+Запустите оба сервера одновременно:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev:full
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Это запустит:
+- Next.js сервер на http://localhost:3000
+- WebSocket сервер на ws://localhost:3001 (для отладки)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Ручной запуск
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+В двух отдельных терминалах:
 
-## Learn More
+**Терминал 1 - Next.js сервер:**
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+**Терминал 2 - WebSocket сервер:**
+```bash
+npm run ws
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Продакшн
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run build
+npm run start
+```
 
-## Deploy on Vercel
+Примечание: Для многопользовательского режима также нужен WebSocket сервер.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Команды
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Команда | Описание |
+|---------|----------|
+| `npm run dev` | Запуск Next.js сервера разработки |
+| `npm run dev:full` | Запуск обоих серверов (Next.js + WebSocket) |
+| `npm run ws` | Запуск WebSocket сервера |
+| `npm run ws:once` | Запуск WebSocket сервера без watch |
+| `npm run build` | Сборка для продакшена |
+| `npm run start` | Запуск продакшн сервера |
+| `npm run lint` | Проверка кода |
+| `npm test` | Запуск тестов |
+| `npm run test:watch` | Тесты в режиме наблюдения |
+| `npm run test:ui` | Tесты с UI |
+| `npm run test:coverage` | Tесты с покрытием |
+
+## Как играть
+
+### Создание комнаты
+1. Откройте http://localhost:3000
+2. Нажмите "Создать комнату"
+3. Скопируйте код комнаты или ссылку
+4. Пригласите друзей
+
+### Начало игры
+1. Дождитесь подключения минимум 2 игроков
+2. Создатель нажимает "Начать игру"
+3. Все игроки видят начальную последовательность (2 элемента)
+
+### Правила
+1. **Демо** — все игроки запоминают последовательность
+2. **Ход** — игроки вводят последовательность по очереди (начиная с первого)
+3. **Правильно** — переход к следующему игроку
+4. **Ошибка** — игра сразу завершается, победитель — другой активный игрок
+5. **Раунд завершён** — когда все игроки ввели правильно, последовательность увеличивается на 1 элемент
+
+### Победа
+- В многопользовательском режиме: последний оставшийся игрок (кто не ошибся)
+- В одиночном режиме: чем больше раундов, тем лучше результат
+
+## Архитектура
+
+### Синхронизация
+- **tRPC + polling** — основной механизм синхронизации (1 сек интервал)
+- **WebSocket** — используется для отладки и расширенных сценариев
+
+### База данных
+- SQLite для локальной разработки
+- drizzle-orm для ORM
+
+### Ключевые файлы
+
+```
+src/
+├── app/                  # Next.js страницы
+├── components/
+│   ├── game/             # Компоненты игры
+│   │   ├── GameRoom.tsx  # Основной экран игры
+│   │   ├── GameBoard.tsx # Доска с ячейками
+│   │   └── PlayerList.tsx
+│   └── ui/               # UI компоненты
+├── lib/
+│   ├── db/
+│   │   └── schema.ts     # Схема БД
+│   └── trpc/             # tRPC клиент
+├── server/
+│   ├── routers/
+│   │   └── game.ts       # tRPC роутер игры
+│   └── ws-server.ts      # WebSocket сервер
+└── hooks/
+    └── useGameWebSocket.ts
+```
+
+### Схема БД
+
+**rooms**:
+- `id` — код комнаты (6 символов)
+- `creatorId` — создатель
+- `status` — waiting | playing | finished
+- `currentSequence` — текущая последовательность (JSON)
+- `currentRound` — номер раунда
+- `currentPlayerId` — текущий игрок
+- `roundComplete` — флаг завершения раунда
+- `winnerId` — победитель
+- `maxPlayers` — макс. игроков
+
+**roomPlayers**:
+- `id`, `roomId`, `userId`, `isActive`, `joinedAt`
+
+**gameHistory**:
+- История завершенных игр
+
+## Тесты
+
+```bash
+# Запуск всех тестов
+npm test
+
+# Режим наблюдения
+npm run test:watch
+
+# С покрытием
+npm run test:coverage
+```
+
+Тесты находятся в `src/server/__tests__/` и покрывают:
+- Создание и подключение к комнатам
+- Начало игры
+- Ввод последовательностей
+- Завершение раундов
+- Определение победителя
+
+## Технологии
+
+- **Next.js 16** — фреймворк
+- **React 19** — UI библиотека
+- **tRPC** — типобезопасный API
+- **drizzle-orm** — ORM
+- **SQLite** — база данных
+- **WebSocket** — реальное время (опционально)
+- **Vitest** — тестирование
+- **TailwindCSS** — стили

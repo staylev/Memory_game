@@ -4,6 +4,7 @@ interface Player {
   userId: string;
   isActive: boolean;
   name?: string;
+  joinedAt?: Date;
 }
 
 interface PlayerListProps {

@@ -22,6 +22,10 @@ export default function RoomPage() {
         if (data?.user) {
           setUserId(data.user.id);
           setUserName(data.user.name);
+          console.log("[RoomPage] Session loaded:", {
+            userId: data.user.id,
+            userName: data.user.name,
+          });
         }
       })
       .catch(() => {
@@ -32,6 +36,9 @@ export default function RoomPage() {
 
   // Присоединяемся к комнате при загрузке
   const joinMutation = trpc.game.joinRoom.useMutation({
+    onSuccess: (data) => {
+      console.log("[RoomPage] Joined room successfully:", data);
+    },
     onError: (error) => {
       // Если уже в комнате — это нормально, не выкидываем
       if (error.message?.includes("уже в этой комнате")) {
